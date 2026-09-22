@@ -1,103 +1,152 @@
-import Foundation
-import CoreBluetooth
+import SwiftUI
 
-class PrinterManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
-    @Published var isBluetoothReady = false
-    @Published var connectionStatus = "Disconnected"
-    @Published var discoveredPrinters: [CBPeripheral] = []
+struct ContentView: View {
+    @StateObject private var sortingEngine = SortingEngine()
+    @StateObject private var printerManager = PrinterManager()
     
-    private var centralManager: CBCentralManager!
-    private var activePrinter: CBPeripheral?
-    private var writeCharacteristic: CBCharacteristic?
+    // Sample populated state simulating a detected scan artifact
+    @State private var activeItem = CollectibleItem(
+        title: "Wolverine Vol. 2 #1 (Classic Cover)",
+        year: "1988",
+        originSet: "X-Men Series",
+        marketPrice: 79.95,
+        isComicBook: true
+    )
     
-    // Fallback standard UUID strings used by generic portable thermal ticket makers
-    private let serialServiceUUID = CBUUID(string: "49535343-FE7D-4AE5-8FA9-9FAFD205E455")
-    private let writeCharacteristicUUID = CBUUID(string: "49535343-1E4D-4BD9-BA61-23C647249616")
+    @State private var showPrinterPicker = false
     
-    override init() {
-        super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
-    }
-    
-    func startScanning() {
-        guard centralManager.state == .poweredOn else { return }
-        connectionStatus = "Scanning for label printers..."
-        discoveredPrinters.removeAll()
-        centralManager.scanForPeripherals(withServices: nil, options: nil)
-    }
-    
-    func connect(to peripheral: CBPeripheral) {
-        centralManager.stopScan()
-        connectionStatus = "Connecting to \(peripheral.name ?? "Unknown Printer")..."
-        activePrinter = peripheral
-        activePrinter?.delegate = self
-        centralManager.connect(peripheral, options: nil)
-    }
-    
-    func sendToPrinter(rawPayload: String) {
-        guard let printer = activePrinter, let characteristic = writeCharacteristic else {
-            connectionStatus = "Error: Printer not ready"
-            return
-        }
-        
-        if let data = rawPayload.data(using: .utf8) {
-            // Sends the label layout chunked to fit the standard MTU over Bluetooth Low Energy
-            printer.writeValue(data, for: characteristic, type: .withResponse)
-            connectionStatus = "Label sent successfully!"
-        }
-    }
-    
-    // MARK: - CBCentralManagerDelegate
-    
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        switch central.state {
-        case .poweredOn:
-            isBluetoothReady = true
-            connectionStatus = "Bluetooth powered on"
-            startScanning()
-        case .poweredOff:
-            isBluetoothReady = false
-            connectionStatus = "Error: Turn on Bluetooth"
-        case .unauthorized:
-            connectionStatus = "Error: App lacks Bluetooth permission"
-        default:
-            connectionStatus = "Bluetooth unavailable"
-        }
-    }
-    
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        if let name = peripheral.name, !name.isEmpty {
-            if !discoveredPrinters.contains(peripheral) {
-                discoveredPrinters.append(peripheral)
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                
+                // Camera Scanning Viewfinder Box
+                VStack(spacing: 12) {
+                    Image(systemName: "camera.viewfinder")
+                        .font(.system(size: 56))
+                        .foregroundColor(.blue)
+                    Text("Align Card Art or Comic Barcode")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .background(Color(.systemGray6))
+                .cornerRadius(16)
+                .padding(.horizontal)
+                
+                // Live Rule-Engine Pipeline Diagnostics
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Automated Label Blueprint")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Divider()
+                    
+                    Group {
+                        Text("Detected Object: ").foregroundColor(.secondary) + Text(activeItem.title).bold()
+                        Text("Release Year: ").foregroundColor(.secondary) + Text(activeItem.year)
+                        Text("Parent Set: ").foregroundColor(.secondary) + Text(activeItem.originSet)
+                        Text("Market Value: ").foregroundColor(.secondary) +
+                        Text("£\(String(format: \"%.2f\", activeItem.marketPrice))")
+                            .foregroundColor(.green)
+                            .bold()
+                    }
+                    .font(.subheadline)
+                    
+                    // The dynamic calculation row demonstrating character extraction
+                    HStack {
+                        Text("Calculated Category Bin:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(sortingEngine.determineStorageSection(for: activeItem))
+                            .font(.subheadline)
+                            .bold()
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundColor(.orange)
+                            .cornerRadius(6)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(16)
+                .padding(.horizontal)
+                
+                // Hardware Connection Status Banner
+                HStack {
+                    Circle()
+                        .frame(width: 8, height: 8)
+                        .foregroundColor(printerManager.connectionStatus.contains("online") ? .green : .orange)
+                    Text("Hardware: \(printerManager.connectionStatus)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Action Controls Block
+                VStack(spacing: 12) {
+                    Button(action: { showPrinterPicker.toggle() }) {
+                        Label("Configure Bluetooth Printer", systemImage: "network")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.secondary.opacity(0.15))
+                            .foregroundColor(.primary)
+                            .cornerRadius(12)
+                    }
+                    
+                    Button(action: executePrintSequence) {
+                        Label("Print Adhesive Price Tag", systemImage: "printer.fill")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .navigationTitle("Collector Scan Engine")
+            .sheet(isPresented: $showPrinterPicker) {
+                PrinterDiscoverySheet(printerManager: printerManager)
             }
         }
     }
     
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        connectionStatus = "Connected to \(peripheral.name ?? "Device")"
-        peripheral.discoverServices(nil)
+    private func executePrintSequence() {
+        let assignedBin = sortingEngine.determineStorageSection(for: activeItem)
+        let formattedString = sortingEngine.generateLabelPayload(for: activeItem, section: assignedBin)
+        
+        // Push raw layout sequence directly down the CoreBluetooth data streams
+        printerManager.sendToPrinter(rawPayload: formattedString)
     }
+}
+
+// Subview rendering detected regional devices in your vicinity
+struct PrinterDiscoverySheet: View {
+    @ObservedObject var printerManager: PrinterManager
+    @Environment(\.dismiss) var dismiss
     
-    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        connectionStatus = "Failed to establish connection"
-    }
-    
-    // MARK: - CBPeripheralDelegate
-    
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        guard let services = peripheral.services else { return }
-        for service in services {
-            peripheral.discoverCharacteristics(nil, for: service)
-        }
-    }
-    
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard let characteristics = service.characteristics else { return }
-        for characteristic in characteristics {
-            // Identify standard data stream channel attributes
-            if characteristic.properties.contains(.write) || characteristic.properties.contains(.writeWithoutResponse) {
-                writeCharacteristic = characteristic
-                connectionStatus = "Printer online & synchronized"
+    var body: some View {
+        NavigationStack {
+            List(printerManager.discoveredPrinters, id: \.identifier) { printer in
+                Button(action: {
+                    printerManager.connect(to: printer)
+                    dismiss()
+                }) {
+                    HStack {
+                        Image(systemName: "printer")
+                        Text(printer.name ?? "Generic BLE Thermal Printer")
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.footnote).foregroundColor(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Select Local Printer")
+            .toolbar {
+                Button("Refresh") { printerManager.startScanning() }
             }
         }
     }
