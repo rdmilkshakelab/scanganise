@@ -87,7 +87,7 @@ class PrinterManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPe
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
         for service in services {
-            peripheral.discoverCharacteristics(nil, some: service)
+            peripheral.discoverCharacteristics(nil, for: service)
         }
     }
     
