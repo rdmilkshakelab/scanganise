@@ -46,7 +46,7 @@ struct ContentView: View {
                         Text("Detected Object: ").foregroundColor(.secondary) + Text(activeItem.title).bold()
                         Text("Release Year: ").foregroundColor(.secondary) + Text(activeItem.year)
                         Text("Parent Set: ").foregroundColor(.secondary) + Text(activeItem.originSet)
-                        Text("Market Value: ").foregroundColor(.secondary) + Text("£\(String(format: "%.2f", activeItem.marketPrice))").foregroundColor(.green).bold()
+                        Text("Market Value: ").foregroundColor(.secondary) + Text("£\(String(format: \"%.2f\", activeItem.marketPrice))").foregroundColor(.green).bold()
                     }
                     .font(.subheadline)
                     
@@ -86,7 +86,7 @@ struct ContentView: View {
                 // Action Controls Block
                 VStack(spacing: 12) {
                     Button(action: { showPrinterPicker.toggle() }) {
-                        Label("Configure Bluetooth Printer", systemName: "network")
+                        Label("Configure Bluetooth Printer", systemImage: "network")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.secondary.opacity(0.15))
@@ -95,7 +95,7 @@ struct ContentView: View {
                     }
                     
                     Button(action: executePrintSequence) {
-                        Label("Print Adhesive Price Tag", systemName: "printer.fill")
+                        Label("Print Adhesive Price Tag", systemImage: "printer.fill")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.blue)
@@ -106,7 +106,7 @@ struct ContentView: View {
                 .padding(.horizontal)
             }
             .navigationTitle("Collector Scan Engine")
-            .sheet(isPresented: &showPrinterPicker) {
+            .sheet(isPresented: $showPrinterPicker) {
                 PrinterDiscoverySheet(printerManager: printerManager)
             }
         }
