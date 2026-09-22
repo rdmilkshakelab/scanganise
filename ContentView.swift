@@ -123,7 +123,7 @@ struct ContentView: View {
 
 // Subview rendering detected regional devices in your vicinity
 struct PrinterDiscoverySheet: View {
-    @ObservedObject var printerManager: PrinterManager()
+    @ObservedObject var printerManager: PrinterManager
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
