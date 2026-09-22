@@ -1,81 +1,29 @@
-name: Build iOS App
+name: Verify Swift Code
 
 on:
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Allows you to manually click a button on GitHub to trigger a build
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: Build and Verify SwiftUI App
+  validate:
+    name: Lint and Compile Swift Files
     runs-on: macos-14
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Xcode Version
+      - name: Select Xcode Version
         run: |
           sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
-          xcodebuild -version
+          swift --version
 
-      - name: Initialize Minimal Project Structure
+      - name: Compile Modules
         run: |
-          # Creates a minimal project configuration on the fly so Apple's tools know how to compile your raw .swift files
-          mkdir -p CollectorApp.xcodeproj
-          cat << 'EOF' > CollectorApp.xcodeproj/project.pbxproj
-          // !$*UTF8*$!
-          {
-            archiveVersion = 1;
-            classes = {};
-            objectVersion = 56;
-            objects = {
-              111111111111111111111111 /* CollectorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222222 /* CollectorApp.swift */; };
-              111111111111111111111112 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222223 /* ContentView.swift */; };
-              111111111111111111111113 /* SortingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222224 /* SortingEngine.swift */; };
-              111111111111111111111114 /* PrinterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222225 /* PrinterManager.swift */; };
-              222222222222222222222222 /* CollectorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectorApp.swift; sourceTree = "<group>"; };
-              222222222222222222222223 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-              222222222222222222222224 /* SortingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortingEngine.swift; sourceTree = "<group>"; };
-              222222222222222222222225 /* PrinterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrinterManager.swift; sourceTree = "<group>"; };
-              333333333333333333333333 /* Root */ = {isa = PBXGroup; children = (222222222222222222222222 /* CollectorApp.swift */, 222222222222222222222223 /* ContentView.swift */, 222222222222222222222224 /* SortingEngine.swift */, 222222222222222222222225 /* PrinterManager.swift */); sourceTree = "<group>"; };
-              444444444444444444444444 /* CollectorApp */ = {isa = PBXNativeTarget; buildConfigurationList = 555555555555555555555555 /* Build configuration list */; buildPhases = (666666666666666666666666 /* Sources */); buildRules = (); dependencies = (); name = CollectorApp; productName = CollectorApp; productType = "com.apple.product-type.application"; };
-              666666666666666666666667 /* Project object */ = {isa = PBXProject; attributes = {LastUpgradeCheck = 1500;}; buildConfigurationList = 555555555555555555555556 /* Project configuration list */; compatibilityVersion = "Xcode 14.0"; mainGroup = 333333333333333333333333 /* Root */; targets = (444444444444444444444444 /* CollectorApp */); };
-              666666666666666666666666 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (111111111111111111111111 /* CollectorApp.swift in Sources */, 111111111111111111111112 /* ContentView.swift in Sources */, 111111111111111111111113 /* SortingEngine.swift in Sources */, 111111111111111111111114 /* PrinterManager.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
-              777777777777777777777771 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; CODE_SIGNING_REQUIRED = NO; DONT_RUN_CODE_SIGNING_POST_PROCESSING = YES; INFOPLIST_FILE = Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1,2";}; name = Debug; };
-              777777777777777777777772 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; CODE_SIGNING_REQUIRED = NO; DONT_RUN_CODE_SIGNING_POST_PROCESSING = YES; INFOPLIST_FILE = Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1,2";}; name = Release; };
-              777777777777777777777773 /* Debug Project */ = {isa = XCBuildConfiguration; buildSettings = {ONLY_ACTIVE_ARCH = YES;}; name = Debug; };
-              777777777777777777777774 /* Release Project */ = {isa = XCBuildConfiguration; buildSettings = {}; name = Release; };
-              555555555555555555555555 /* Build configuration list for PBXNativeTarget "CollectorApp" */ = {isa = XCConfigurationList; buildConfigurations = (777777777777777777777771 /* Debug */, 777777777777777777777772 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-              555555555555555555555556 /* Build configuration list for PBXProject "CollectorApp" */ = {isa = XCConfigurationList; buildConfigurations = (777777777777777777777773 /* Debug Project */, 777777777777777777777774 /* Release Project */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-            };
-            rootObject = 666666666666666666666667 /* Project object */;
-          }
-          EOF
-
-          # Generates a basic configuration properties manifest required by xcodebuild
-          cat << 'EOF' > Info.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleIdentifier</key>
-              <string>com.example.CollectorApp</string>
-              <key>CFBundleName</key>
-              <string>CollectorApp</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>CFBundleVersion</key>
-              <string>1</string>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Compile Application (Verification)
-        run: |
-          # Compiles the Swift files against the iOS Simulator architecture to confirm zero errors
-          xcodebuild -project CollectorApp.xcodeproj -scheme CollectorApp -sdk iphonesimulator -configuration Debug build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          # Compiles all Swift logic files directly into an active module to test for syntax and logic bugs
+          swiftc -sdk $(xcrun --sdk iphonesimulator --show-sdk-path) \
+                 -target x86_64-apple-ios17.0-simulator \
+                 CollectorApp.swift ContentView.swift SortingEngine.swift PrinterManager.swift
