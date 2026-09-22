@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct ContentView: View {
@@ -47,7 +48,7 @@ struct ContentView: View {
                         Text("Release Year: ").foregroundColor(.secondary) + Text(activeItem.year)
                         Text("Parent Set: ").foregroundColor(.secondary) + Text(activeItem.originSet)
                         Text("Market Value: ").foregroundColor(.secondary) +
-                        Text("£\(String(format: \"%.2f\", activeItem.marketPrice))")
+                        Text("£\(String(format: "%.2f", activeItem.marketPrice))")
                             .foregroundColor(.green)
                             .bold()
                     }
